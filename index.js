@@ -352,73 +352,89 @@ const path = require("path");
 const inquirer = require("inquirer");
 const colors = require("colors/safe");
 
-const isFile = (fileName) => {
-  return fs.lstatSync(fileName).isFile();
+console.log("script started");
+
+const reader = () => {
+  const isFile = (fileName) => {
+    return fs.lstatSync(fileName).isFile();
+  };
+
+  let dirPath;
+  let responseData;
+
+  inquirer
+    .prompt([
+      {
+        name: "dirName",
+        type: "string",
+        message: "Choose directory:",
+      },
+    ])
+    .then((answer) => {
+      dirPath = answer.dirName || __dirname;
+      console.log("prompt", dirPath);
+
+      const choseDir = () => {
+        console.log("dirPath", dirPath);
+        const list = fs.readdirSync(dirPath);
+
+        if (list.length === 0) {
+          console.log(
+            colors.red(dirPath) + colors.bgRed(" doesn`t have any file")
+          );
+        } else {
+          let filePath;
+
+          inquirer
+            .prompt([
+              {
+                name: "fileName",
+                type: "list",
+                message: "Choose file:",
+                choices: list,
+              },
+            ])
+            .then((answer) => {
+              filePath = path.join(dirPath, answer.fileName);
+              if (!isFile(filePath)) {
+                dirPath = filePath;
+                choseDir();
+              } else {
+                inquirer
+                  .prompt([
+                    {
+                      name: "searchStr",
+                      type: "string",
+                      message: "Choose string:",
+                    },
+                  ])
+                  .then((answer) => {
+                    const regExp = answer.searchStr
+                      ? new RegExp(answer.searchStr)
+                      : /189.123.1.41/;
+                    fs.readFile(filePath, "utf8", (err, data) => {
+                      const result = data.split("\n");
+                      responseData = result
+                        .filter((str) => regExp.test(str))
+                        .join("\n");
+                      console.log(responseData);
+                      fs.writeFile(
+                        "/Users/akochiev/Desktop/nodeJs/index.html",
+                        responseData,
+                        (err) => {
+                          console.log;
+                        }
+                      );
+                    });
+                  });
+              }
+            });
+        }
+      };
+
+      choseDir();
+    });
+  return responseData;
 };
 
-let dirPath;
-
-inquirer
-  .prompt([
-    {
-      name: "dirName",
-      type: "string",
-      message: "Choose directory:",
-    },
-  ])
-  .then((answer) => {
-    dirPath = answer.dirName || __dirname;
-    console.log("prompt", dirPath);
-
-    const choseDir = () => {
-      console.log("dirPath", dirPath);
-      const list = fs.readdirSync(dirPath);
-
-      if (list.length === 0) {
-        console.log(
-          colors.red(dirPath) + colors.bgRed(" doesn`t have any file")
-        );
-      } else {
-        let filePath;
-
-        inquirer
-          .prompt([
-            {
-              name: "fileName",
-              type: "list",
-              message: "Choose file:",
-              choices: list,
-            },
-          ])
-          .then((answer) => {
-            filePath = path.join(dirPath, answer.fileName);
-            if (!isFile(filePath)) {
-              dirPath = filePath;
-              choseDir();
-            } else {
-              inquirer
-                .prompt([
-                  {
-                    name: "searchStr",
-                    type: "string",
-                    message: "Choose string:",
-                  },
-                ])
-                .then((answer) => {
-                  const regExp = answer.searchStr
-                    ? new RegExp(answer.searchStr)
-                    : /189.123.1.41/;
-                  fs.readFile(filePath, "utf8", (err, data) => {
-                    const result = data.split("\n");
-                    console.log(
-                      result.filter((str) => regExp.test(str)).join("\n")
-                    );
-                  });
-                });
-            }
-          });
-      }
-    };
-
-    choseDir();
-  });
+reader();
