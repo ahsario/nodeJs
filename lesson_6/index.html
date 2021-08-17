@@ -1,0 +1,59 @@
+<html>
+  <script
+    src="https://cdn.socket.io/3.1.1/socket.io.min.js"
+    integrity="sha384-gDaozqUvc4HTgo8iZjwth73C6dDDeOJsAgpxBcMpZYztUfjHXpzrpdrHRdVp8ySO"
+    crossorigin="anonymous"
+  ></script>
+  <head>
+    <title>Socket App</title>
+  </head>
+  <body>
+    <label for="name">Input your name</label>
+    <input type="text" id="name" autofocus />
+    <div style="min-height: 16px"></div>
+    <input type="text" id="input" />
+    <input type="submit" id="send" value="Send" />
+    <div id="messages"></div>
+  </body>
+  <script type="text/javascript">
+    const socket = io("localhost:3000");
+
+    const addMessage = ({ msg, name }) => {
+      const msgSpan = (document.createElement("span").innerHTML = `${msg} (${
+        name || "unknown"
+      })`);
+      document.getElementById("messages").append(msgSpan);
+      document.getElementById("messages").append(document.createElement("br"));
+    };
+
+    socket.on("connect", function () {
+      socket.emit("CLIENT_MSG", {
+        msg: document.getElementById("name").value,
+      });
+    });
+
+    socket.on("SERVER_MSG", function (data) {
+      addMessage(data);
+    });
+
+    document.getElementById("name").addEventListener("blur", (e) => {
+      socket.emit("CLIENT_NAME", {
+        msg: e.target.value,
+      });
+    });
+
+    document.getElementById("send").onclick = function () {
+      socket.emit("CLIENT_MSG", {
+        name: document.getElementById("name").value,
+        msg: document.getElementById("input").value,
+      });
+      document.getElementById("input").value = "";
+    };
+
+    window.addEventListener("unload", () => {
+      socket.emit("CLIENT_MSG", {
+        msg: `user ${document.getElementById("name").value} disconected`,
+      });
+    });
+  </script>
+</html>
