@@ -1,9 +1,112 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <title>5 урок</title>
     <meta charset="utf-8" />
+    <script
+      src="https://cdn.socket.io/3.1.1/socket.io.min.js"
+      integrity="sha384-gDaozqUvc4HTgo8iZjwth73C6dDDeOJsAgpxBcMpZYztUfjHXpzrpdrHRdVp8ySO"
+      crossorigin="anonymous"
+    ></script>
   </head>
   <body>
-    <h1>5 урок</h1>
+    <div style="display: flex; justify-content: space-between">
+      <h1>5 урок</h1>
+      <h2 id="userCounter">0</h2>
+    </div>
+    <input type="text" placeholder="input directory" id="dir" />
+    <button type="button" id="adder">перейти в каталог</button>
+    <div
+      style="display: flex; justify-content: space-between; margin-top: 32px"
+    >
+      <div
+        style="border: 1px solid black; min-width: 20%; min-height: 500px"
+        id="filesList"
+      ></div>
+      <div
+        style="
+          border: 1px solid black;
+          height: 500px;
+          min-width: 80%;
+          overflow: scroll;
+          padding: 32px;
+          box-sizing: border-box;
+        "
+        id="fileBlock"
+      ></div>
+    </div>
+    <script src="./index.js"></script>
+    <script>
+      const adder = () => {
+        const post = (str) => {
+          fetch("http://localhost:3000/", {
+            method: "post",
+            headers: {
+              "Content-Type": "application/json;charset=utf-8",
+            },
+            body: str,
+          })
+            .then((res) => res.json())
+            .then((res) => {
+              const p = document.createElement("p");
+              p.innerHTML = res;
+              document.getElementById("fileBlock").innerHTML = "";
+              document.getElementById("fileBlock").appendChild(p);
+            });
+        };
+
+        fetch("http://localhost:3000/", {
+          method: "post",
+          headers: {
+            "Content-Type": "application/json;charset=utf-8",
+          },
+          body: JSON.stringify({
+            type: "dir",
+            dir: document.getElementById("dir").value,
+          }),
+        })
+          .then((res) => res.json())
+          .then((res) => {
+            const ul = document.createElement("ul");
+            res.map((el) => {
+              const li = document.createElement("li");
+              li.innerHTML = el;
+              const req = {
+                type: "list",
+                fileName: el,
+              };
+              li.addEventListener("click", () => post(JSON.stringify(req)));
+              ul.appendChild(li);
+            });
+            console.log(ul);
+            document.getElementById("filesList").innerHTML = "";
+            document.getElementById("filesList").appendChild(ul);
+          });
+      };
+      document.getElementById("adder").addEventListener("click", adder);
+
+      const changeCount = ({ counter }) => {
+        document.getElementById(
+          "userCounter"
+        ).innerHTML = `кол-во пользователей: ${counter}`;
+      };
+
+      const socket = io("localhost:3000");
+      socket.on("connect", function () {
+        socket.emit("CLIENT_MSG", {
+          inc: 1,
+        });
+      });
+
+      socket.on("SERVER_MSG", function (data) {
+        changeCount(data);
+      });
+
+      window.addEventListener("unload", () => {
+        socket.emit("CLIENT_MSG", {
+          inc: -1,
+        });
+      });
+    </script>
   </body>
 </html>
